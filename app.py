@@ -65,7 +65,7 @@ class ConfigApp:
 
                 
                 toggle_button = ttk.Button(config_tab, text="Toggle", command=lambda config=config, item=status_item: self.toggle_config(config, item))
-                toggle_button.pack(side="left", padx=5)
+                toggle_button.pack(pady=15, padx=5)
 
         self.config_panel.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
