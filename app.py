@@ -6,7 +6,7 @@ class ConfigApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Configuration App")
-        self.root.geometry("1200x600")  
+        self.root.geometry("1200x600")
 
         self.configurations = {
             "General": {
@@ -20,7 +20,7 @@ class ConfigApp:
         }
 
         style = ThemedStyle(self.root)
-        style.set_theme("equilux")  
+        style.set_theme("equilux")
 
         self.create_ui()
 
@@ -65,14 +65,8 @@ class ConfigApp:
                 img = tk.PhotoImage(file=image_path)
                 config_canvas.create_image(10, 10, anchor=tk.NW, image=img)
 
-                name_label = tk.Label(config_frame, text="Name: Second", font=('Arial', 10))
-                name_label.grid(row=1, column=0, pady=5, sticky="w")
-
-                desc_label = tk.Label(config_frame, text="Description: This is a sample description.", font=('Arial', 10))
-                desc_label.grid(row=2, column=0, pady=5, sticky="w")
-
                 config_button = ttk.Button(config_frame, text="Config", command=lambda category=category, config=config: self.show_config_frame(category, config))
-                config_button.grid(row=3, column=0, pady=5, sticky="w")
+                config_button.grid(row=1, column=0, pady=5, sticky="w")
 
         self.config_panel.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
@@ -104,24 +98,22 @@ class ConfigApp:
         help_menu.add_command(label="Credits", command=lambda: notebook.select(credits_tab))
 
     def show_config_frame(self, category, config):
-        # Destroy the existing config frame if it exists
-        for child in self.root.winfo_children():
-            if isinstance(child, ttk.Frame):
-                child.destroy()
+        # Create a new window (Toplevel) for configuration
+        config_window = tk.Toplevel(self.root)
+        config_window.title(f"{config} Configuration")
+        config_window.geometry("400x300")
 
-        # Create a new config frame
-        config_frame = ttk.Frame(self.root)
-        config_frame.pack(fill="both", expand=True)
+        tk.Label(config_window, text=f"Name: {config}", font=('Arial', 14)).pack(pady=10)
+        tk.Label(config_window, text="Description: This is a sample description.", font=('Arial', 12)).pack(pady=10)
 
-        tk.Label(config_frame, text=f"{config} Configuration", font=('Arial', 16, 'bold')).pack(pady=10)
+        enable_disable_button = ttk.Button(config_window, text="Enable" if not self.configurations[category][config]["status"] else "Disable", command=lambda: self.toggle_config(category, config))
+        enable_disable_button.pack(pady=10)
 
-        tk.Label(config_frame, text="Name: Second", font=('Arial', 10)).pack(pady=5)
-        tk.Label(config_frame, text="Description: This is a sample description.", font=('Arial', 10)).pack(pady=5)
+        save_button = ttk.Button(config_window, text="Save", command=lambda: self.save_config(category, config))
+        save_button.pack(pady=10)
 
-        # Add enable/disable, save, and back buttons
-        tk.Button(config_frame, text="Enable" if not self.configurations[category][config]["status"] else "Disable", command=lambda: self.toggle_config(category, config)).pack(pady=10)
-        tk.Button(config_frame, text="Save", command=lambda: self.save_config(category, config)).pack(pady=10)
-        tk.Button(config_frame, text="Back", command=lambda: config_frame.destroy()).pack(pady=10)
+        back_button = ttk.Button(config_window, text="Back", command=config_window.destroy)
+        back_button.pack(pady=10)
 
     def save_settings(self):
         with open("settings.txt", "w") as file:
@@ -139,7 +131,7 @@ class ConfigApp:
         messagebox.showinfo("Status Changed", f"Status of {config} changed to {new_status}")
 
     def save_config(self, category, config):
-        messagebox.showinfo("Config Saved", f"Configuration {config} in {category} saved with predefined name and description.")
+        messagebox.showinfo("Config Saved", f"Configuration {config} in {category} saved.")
 
 if __name__ == "__main__":
     root = tk.Tk()
