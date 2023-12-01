@@ -10,36 +10,29 @@ class ConfigApp:
 
         self.configurations = {
             "General": {
-                "Config1": False,
-                "Config2": False,
+                "Config1": {"status": False, "image": "general_image.png"},
+                "Config2": {"status": False, "image": "general_image.png"},
             },
             "Advanced": {
-                "Config3": False,
-                "Config4": False,
+                "Config3": {"status": False, "image": "advanced_image.png"},
+                "Config4": {"status": False, "image": "advanced_image.png"},
             },
-            
         }
 
-        
         style = ThemedStyle(self.root)
         style.set_theme("equilux")  
 
-        
         self.create_ui()
 
     def create_ui(self):
-        
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill='both', expand=True, padx=10, pady=10)
 
-        
         categories_tab = ttk.Frame(notebook)
         notebook.add(categories_tab, text="Categories")
 
-        
-        categories_panel = ttk.Treeview(categories_tab, columns=("Status", "Toggle"), show="tree", selectmode="none")
+        categories_panel = ttk.Treeview(categories_tab, columns=("Toggle",), show="tree", selectmode="none")
         categories_panel.heading("#0", text="Categories", anchor="w")
-        categories_panel.heading("Status", text="Status", anchor="w")
         categories_panel.heading("Toggle", text="Toggle", anchor="w")
 
         for category in self.configurations:
@@ -47,85 +40,106 @@ class ConfigApp:
 
         categories_panel.pack(side="left", fill="y", padx=10, pady=10)
 
-        
         config_tab = ttk.Frame(notebook)
         notebook.add(config_tab, text="Configurations")
 
-        
-        self.config_panel = ttk.Treeview(config_tab, columns=("Status", "Toggle"), show="tree")
+        self.config_panel = ttk.Treeview(config_tab, columns=("Config",), show="tree")
         self.config_panel.heading("#0", text="Configurations", anchor="w")
-        self.config_panel.heading("Status", text="Status", anchor="w")
-        self.config_panel.heading("Toggle", text="Toggle", anchor="w")
+        self.config_panel.heading("Config", text="Config", anchor="w")
+
+        config_frame_container = ttk.Frame(config_tab)
+        config_frame_container.pack(side="left", fill="both", expand=True)
 
         for category, configs in self.configurations.items():
-            category_item = self.config_panel.insert("", "end", text=category, open=True)
-            for config, value in configs.items():
-                status_item = self.config_panel.insert(category_item, "end", text=config, values=(str(value), ""))
-                self.config_panel.tag_bind(status_item, '<1>', lambda event, config=config, item=status_item: self.on_treeview_click(event, config, item))
+            for config, data in configs.items():
+                config_frame = ttk.Frame(config_frame_container)
+                config_frame.grid(row=len(config_frame_container.winfo_children()), column=0, padx=5, pady=5, sticky="w")
 
-                
-                toggle_button = ttk.Button(config_tab, text="Toggle", command=lambda config=config, item=status_item: self.toggle_config(config, item))
-                toggle_button.pack(pady=15, padx=5)
+                config_canvas = tk.Canvas(config_frame, width=200, height=150, bd=2, relief="solid")
+                config_canvas.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+
+                title_label = tk.Label(config_canvas, text=f"{config} Configuration", font=('Arial', 12, 'bold'))
+                title_label.grid(row=0, column=1, pady=(5, 0))
+
+                image_path = data["image"]
+                img = tk.PhotoImage(file=image_path)
+                config_canvas.create_image(10, 10, anchor=tk.NW, image=img)
+
+                name_label = tk.Label(config_frame, text="Name: Second", font=('Arial', 10))
+                name_label.grid(row=1, column=0, pady=5, sticky="w")
+
+                desc_label = tk.Label(config_frame, text="Description: This is a sample description.", font=('Arial', 10))
+                desc_label.grid(row=2, column=0, pady=5, sticky="w")
+
+                config_button = ttk.Button(config_frame, text="Config", command=lambda category=category, config=config: self.show_config_frame(category, config))
+                config_button.grid(row=3, column=0, pady=5, sticky="w")
 
         self.config_panel.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
-        
         save_button = ttk.Button(config_tab, text="Save Settings", command=self.save_settings)
         save_button.pack(pady=10)
 
-        
         staff_tab = ttk.Frame(notebook)
         notebook.add(staff_tab, text="Staff")
 
         staff_label = tk.Label(staff_tab, text="Staff Information", font=('Arial', 16, 'bold'), bg="#ffcccc")
         staff_label.pack(pady=10)
 
-        
         credits_tab = ttk.Frame(notebook)
         notebook.add(credits_tab, text="Credits")
 
         credits_label = tk.Label(credits_tab, text="Credits Information", font=('Arial', 16, 'bold'), bg="#ccffcc")
         credits_label.pack(pady=10)
 
-        
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
 
-        
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Exit", command=self.root.destroy)
 
-        # Help menu
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="Staff", command=lambda: notebook.select(staff_tab))
         help_menu.add_command(label="Credits", command=lambda: notebook.select(credits_tab))
 
+    def show_config_frame(self, category, config):
+        # Destroy the existing config frame if it exists
+        for child in self.root.winfo_children():
+            if isinstance(child, ttk.Frame):
+                child.destroy()
+
+        # Create a new config frame
+        config_frame = ttk.Frame(self.root)
+        config_frame.pack(fill="both", expand=True)
+
+        tk.Label(config_frame, text=f"{config} Configuration", font=('Arial', 16, 'bold')).pack(pady=10)
+
+        tk.Label(config_frame, text="Name: Second", font=('Arial', 10)).pack(pady=5)
+        tk.Label(config_frame, text="Description: This is a sample description.", font=('Arial', 10)).pack(pady=5)
+
+        # Add enable/disable, save, and back buttons
+        tk.Button(config_frame, text="Enable" if not self.configurations[category][config]["status"] else "Disable", command=lambda: self.toggle_config(category, config)).pack(pady=10)
+        tk.Button(config_frame, text="Save", command=lambda: self.save_config(category, config)).pack(pady=10)
+        tk.Button(config_frame, text="Back", command=lambda: config_frame.destroy()).pack(pady=10)
+
     def save_settings(self):
         with open("settings.txt", "w") as file:
             for category, configs in self.configurations.items():
                 file.write(f"[{category}]\n")
-                for config, value in configs.items():
-                    file.write(f"{config}={value}\n")
+                for config, data in configs.items():
+                    file.write(f"{config}={data['status']}\n")
 
         messagebox.showinfo("Saved", "Settings saved to settings.txt")
 
-    def on_treeview_click(self, event, config, item):
-        category = self.config_panel.item(self.config_panel.parent(item))["text"]
-        current_value = self.configurations[category][config]
-        new_value = not current_value
-        self.configurations[category][config] = new_value
-        self.config_panel.item(item, values=(str(new_value), ""))  # Update the values directly
-        print(f"Updated item values: {self.config_panel.item(item, 'values')}")
+    def toggle_config(self, category, config):
+        current_status = self.configurations[category][config]["status"]
+        new_status = not current_status
+        self.configurations[category][config]["status"] = new_status
+        messagebox.showinfo("Status Changed", f"Status of {config} changed to {new_status}")
 
-    def toggle_config(self, config, item):
-        category = self.config_panel.item(self.config_panel.parent(item))["text"]
-        current_value = self.configurations[category][config]
-        new_value = not current_value
-        self.configurations[category][config] = new_value
-        self.config_panel.item(item, values=(str(new_value), ""))  # Update the values directly
-        print(f"Toggled item values: {self.config_panel.item(item, 'values')}")
+    def save_config(self, category, config):
+        messagebox.showinfo("Config Saved", f"Configuration {config} in {category} saved with predefined name and description.")
 
 if __name__ == "__main__":
     root = tk.Tk()
