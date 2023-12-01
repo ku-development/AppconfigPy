@@ -19,8 +19,8 @@ class ConfigApp:
             },
         }
 
-        style = ThemedStyle(self.root)
-        style.set_theme("equilux")
+        self.style = ThemedStyle(self.root)
+        self.style.set_theme("equilux")  # Set the arc theme for a modern look
 
         self.create_ui()
 
@@ -52,14 +52,14 @@ class ConfigApp:
 
         for category, configs in self.configurations.items():
             for config, data in configs.items():
-                config_frame = ttk.Frame(config_frame_container)
+                config_frame = ttk.Frame(config_frame_container, style="Config.TFrame")  # Use a custom style for a modern look
                 config_frame.grid(row=len(config_frame_container.winfo_children()), column=0, padx=5, pady=5, sticky="w")
 
-                config_canvas = tk.Canvas(config_frame, width=200, height=150, bd=2, relief="solid")
+                config_canvas = tk.Canvas(config_frame, width=200, height=150, bd=2, relief="solid", highlightthickness=0)
                 config_canvas.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
-                title_label = tk.Label(config_canvas, text=f"{config} Configuration", font=('Arial', 12, 'bold'))
-                title_label.grid(row=0, column=1, pady=(5, 0))
+                title_label = tk.Label(config_canvas, text=f"{config} Configuration", font=('Arial', 12, 'bold'), bg="#f0f0f0")
+                title_label.grid(row=0, column=1, pady=(5, 0), sticky="w")
 
                 image_path = data["image"]
                 img = tk.PhotoImage(file=image_path)
@@ -97,12 +97,15 @@ class ConfigApp:
         help_menu.add_command(label="Staff", command=lambda: notebook.select(staff_tab))
         help_menu.add_command(label="Credits", command=lambda: notebook.select(credits_tab))
 
+        # Define a custom style for the Config frames
+        self.style.configure("Config.TFrame", background="#f0f0f0", borderwidth=2, relief="solid")
+
     def show_config_frame(self, category, config):
         # Create a new window (Toplevel) for configuration
         config_window = tk.Toplevel(self.root)
         config_window.title(f"{config} Configuration")
         config_window.geometry("400x300")
-
+        
         tk.Label(config_window, text=f"Name: {config}", font=('Arial', 14)).pack(pady=10)
         tk.Label(config_window, text="Description: This is a sample description.", font=('Arial', 12)).pack(pady=10)
 
@@ -114,7 +117,8 @@ class ConfigApp:
 
         back_button = ttk.Button(config_window, text="Back", command=config_window.destroy)
         back_button.pack(pady=10)
-
+        ThemedStyle(config_window).set_theme("equilux")
+        
     def save_settings(self):
         with open("settings.txt", "w") as file:
             for category, configs in self.configurations.items():
