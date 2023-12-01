@@ -18,11 +18,47 @@ class ConfigApp:
                 "Config4": {"status": False, "image": "advanced_image.png"},
             },
         }
+        
+        self.configurations = self.load_configurations()
 
         self.style = ThemedStyle(self.root)
         self.style.set_theme("equilux")  # Set the arc theme for a modern look
 
         self.create_ui()
+
+    def load_configurations(self):
+        configurations = {}
+
+        try:
+            with open("settings.txt", "r") as file:
+                lines = file.readlines()
+                current_category = None
+
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith("[") and line.endswith("]"):
+                        current_category = line[1:-1]
+                        configurations[current_category] = {}
+                    elif "=" in line and current_category:
+                        config, value = line.split("=")
+                        status = value.lower() == "true"
+                        configurations[current_category][config] = {"status": status, "image": "placeholder_image.png"}
+
+        except FileNotFoundError:
+            # If the file doesn't exist, initialize with default configurations
+            configurations = {
+                "General": {
+                    "Config1": {"status": False, "image": "general_image.png"},
+                    "Config2": {"status": False, "image": "general_image.png"},
+                },
+                "Advanced": {
+                    "Config3": {"status": False, "image": "advanced_image.png"},
+                    "Config4": {"status": False, "image": "advanced_image.png"},
+                },
+            }
+
+        return configurations
+
 
     def create_ui(self):
         notebook = ttk.Notebook(self.root)
@@ -101,11 +137,17 @@ class ConfigApp:
         self.style.configure("Config.TFrame", background="#f0f0f0", borderwidth=2, relief="solid")
 
     def show_config_frame(self, category, config):
+        # Refresh configurations from settings.txt
+        self.configurations = self.load_configurations()
+
         # Create a new window (Toplevel) for configuration
         config_window = tk.Toplevel(self.root)
         config_window.title(f"{config} Configuration")
         config_window.geometry("400x300")
         
+        # Apply the 'arc' theme to the config_window
+        ThemedStyle(config_window).set_theme("arc")
+
         tk.Label(config_window, text=f"Name: {config}", font=('Arial', 14)).pack(pady=10)
         tk.Label(config_window, text="Description: This is a sample description.", font=('Arial', 12)).pack(pady=10)
 
@@ -118,25 +160,34 @@ class ConfigApp:
         back_button = ttk.Button(config_window, text="Back", command=config_window.destroy)
         back_button.pack(pady=10)
         ThemedStyle(config_window).set_theme("equilux")
-        
+
     def save_settings(self):
-        with open("settings.txt", "w") as file:
-            for category, configs in self.configurations.items():
-                file.write(f"[{category}]\n")
+            with open("settings.txt", "w") as file:
+                for category, configs in self.configurations.items():
+                    file.write(f"[{category}]\n")
                 for config, data in configs.items():
                     file.write(f"{config}={data['status']}\n")
 
-        messagebox.showinfo("Saved", "Settings saved to settings.txt")
+            messagebox.showinfo("Saved", "Settings saved to settings.txt")
 
     def toggle_config(self, category, config):
         current_status = self.configurations[category][config]["status"]
         new_status = not current_status
         self.configurations[category][config]["status"] = new_status
+        self.save_configurations()  # Save configurations after toggle
         messagebox.showinfo("Status Changed", f"Status of {config} changed to {new_status}")
 
     def save_config(self, category, config):
+        self.save_configurations()  # Save configurations before showing the message
         messagebox.showinfo("Config Saved", f"Configuration {config} in {category} saved.")
 
+    def save_configurations(self):
+        # Save configurations to settings.txt
+        with open("settings.txt", "w") as file:
+            for category, configs in self.configurations.items():
+                file.write(f"[{category}]\n")
+                for config, data in configs.items():
+                    file.write(f"{config}={data['status']}\n")
 if __name__ == "__main__":
     root = tk.Tk()
     app = ConfigApp(root)
