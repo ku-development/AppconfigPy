@@ -1,3 +1,4 @@
+from telnetlib import theNULL
 import tkinter as tk
 from tkinter import ttk, messagebox
 from ttkthemes import ThemedStyle
@@ -35,7 +36,6 @@ class ConfigApp:
             },
         }
 
-        # self.configurations["Crime"]["Bank Robbery"]["properties"]["Required Cops Amount"] = {"value": 5, "type": "number"}
         
         self.configurations = self.load_configurations()
 
@@ -62,22 +62,32 @@ class ConfigApp:
                         config, props_data = line.split(":", 1)
                         properties = {}
 
-                        # Split properties
+                        
                         for prop_data in props_data.split(","):
                             prop_data = prop_data.strip()
                             if "=" in prop_data:
                                 prop, value = prop_data.split("=")
-                                prop_type = value.split(":")[-1].strip()  # Extract type from the value
-                                properties[prop.strip()] = {"value": value.split(":")[0].strip(), "type": prop_type}
+                                
+                                type_position = value.rfind(":")
+                                if type_position != -1:
+                                    prop_value = value[:type_position].strip()
+                                    prop_type = value[type_position + 1:].strip()
+                                else:
+                                    prop_value = value.strip()
+                                    prop_type = "text"
 
-                        # Get image separately
+                                properties[prop.strip()] = {"value": prop_value, "type": prop_type}
+
+
+
+                        
                         image_data = properties.pop("image", {"value": "placeholder_image.png"})
 
                         configurations[current_category][config] = {
-                            "status": True,  # Adjust this as needed
+                            "status": True,  
                             "image": image_data["value"],
                             "properties": properties,
-                            "type": "boolean",  # Default to boolean, adjust as needed
+                            "type": "boolean",  
                         }
 
         except FileNotFoundError:
@@ -116,7 +126,7 @@ class ConfigApp:
             return False
         
     def create_ui(self):
-        # Load configurations before creating UI
+        
         self.configurations = self.load_configurations()
 
         notebook = ttk.Notebook(self.root)
@@ -153,21 +163,34 @@ class ConfigApp:
 
                 for prop_name, prop_type in properties.items():
                     if prop_type == "number":
-                        prop_entry = ttk.Entry(config_frame, validate="key", validatecommand=(self.root.register(self.validate_number), "%P"))
-                        prop_entry.grid(row=2, column=0, pady=5, padx=6, sticky="w")
-                        data["properties"][prop_name] = prop_entry
+                        prop_entry_var = tk.StringVar(value=prop_data["value"])
+                        prop_entry = ttk.Entry(config_frame, validate="key", validatecommand=(self.root.register(self.validate_number), "%P"), textvariable=prop_entry_var)
+                        data["properties"][prop_name] = {"widget": prop_entry, "type": prop_type, "var": prop_entry_var}
                     elif prop_type == "text":
-                        prop_entry = ttk.Entry(config_frame)
-                        prop_entry.grid(row=2, column=0, pady=5, padx=6, sticky="w")
-                        data["properties"][prop_name] = prop_entry
-                # Add the appropriate widget based on the type
-                if "type" in data and data["type"] == "boolean":
-                    input_widget = ttk.Checkbutton(config_frame, text="Enable", variable=tk.BooleanVar(value=data["status"]))
-                elif "type" in data and data["type"] == "text":
-                    input_widget = ttk.Entry(config_frame)
-                elif "type" in data and data["type"] == "number":
-                    input_widget = ttk.Entry(config_frame, validate="key", validatecommand=(self.root.register(self.validate_number), "%P"))
-                
+                        prop_entry_var = tk.StringVar(value=prop_data["value"])
+                        prop_entry = ttk.Entry(config_frame, textvariable=prop_entry_var)
+                        data["properties"][prop_name] = {"widget": prop_entry, "type": prop_type, "var": prop_entry_var}
+                    elif prop_type == "boolean":
+                        prop_check_var = tk.BooleanVar(value=prop_data["value"])
+                        prop_entry = ttk.Checkbutton(config_frame, text="Enable", variable=prop_check_var)
+                        data["properties"][prop_name] = {"widget": prop_entry, "type": prop_type, "var": prop_check_var}
+
+                    
+
+                        print(prop_entry)
+                        print(data["properties"][prop_name])
+
+                        if prop_type == "boolean":
+                            input_widget = ttk.Checkbutton(config_frame, text="Enable", variable=tk.BooleanVar(value=data["status"]))
+                        elif prop_type == "text":
+                            input_widget = ttk.Entry(config_frame)
+                        elif prop_type == "number":
+                            input_widget = ttk.Entry(config_frame, validate="key", validatecommand=(self.root.register(self.validate_number), "%P"))
+                        
+                        
+                        data["properties"][prop_name]["widget"] = input_widget  
+                        print(input_widget)
+                                    
         
                 title_label = tk.Label(config_frame, text=f"{config} Configuration", font=('Arial', 12, 'bold'), bg="#f0f0f0")
                 title_label.grid(row=0, column=0, pady=(5, 0), sticky="w")
@@ -178,7 +201,7 @@ class ConfigApp:
                 command=lambda cat=category, conf=config, dat=data: self.show_config_frame(cat, conf, dat))
 
                 config_button.grid(row=2, column=0, pady=5, padx=6, sticky="w")
-        # input_widget.grid(row=1, column=0, pady=5, padx=6, sticky="w")
+        
         self.config_panel.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
         save_button = ttk.Button(config_tab, text="Save Settings", command=self.save_settings)
@@ -208,30 +231,30 @@ class ConfigApp:
         help_menu.add_command(label="Staff", command=lambda: notebook.select(staff_tab))
         help_menu.add_command(label="Credits", command=lambda: notebook.select(credits_tab))
 
-        # Define a custom style for the Config frames
+        
         self.style.configure("Config.TFrame", background="#f0f0f0", borderwidth=2, relief="solid")
 
     def show_config_frame(self, category, config, data):
         config_window = tk.Toplevel(self.root)
         config_window.title(f"{config} Configuration")
-        config_window.geometry("400x500")  # Increased height
-        config_window.config(bg='#2e2e2e')  # Set to the desired background color
+        config_window.geometry("400x500")  
+        config_window.config(bg='#2e2e2e')  
         ThemedStyle(config_window).set_theme("equilux")
 
         ttk.Label(config_window, text=f"Configuration: {config}", font=('Arial', 14), foreground='white', background='#2e2e2e').pack(pady=10)
 
-        # Create a string to store configuration values
+        
         config_values_str = ""
 
         for prop, prop_data in data.get("properties", {}).items():
             ttk.Label(config_window, text=f"{prop}:", font=('Arial', 12), foreground='white', background='#2e2e2e').pack(pady=5)
 
-            # Determine type based on the input value
+            
             prop_type = self.infer_type(prop_data["value"])
-
             if prop_type == "boolean":
                 var = tk.BooleanVar(value=prop_data["value"].lower() == "true")
                 input_widget = ttk.Checkbutton(config_window, text="Enabled" if var.get() else "Disabled", variable=var, style="Dark.TCheckbutton")
+                prop_data["widget"] = input_widget
             elif prop_type == "text":
                 var = tk.StringVar(value=prop_data["value"])
                 input_widget = ttk.Entry(config_window, textvariable=var, style="Dark.TEntry")
@@ -239,59 +262,64 @@ class ConfigApp:
                 var = tk.StringVar(value=prop_data["value"])
                 input_widget = ttk.Entry(config_window, validate="key", validatecommand=(self.root.register(self.validate_number), "%P"), textvariable=var, style="Dark.TEntry")
 
-            input_widget.pack(pady=3, padx=10)  # Adjusted pady and padx
+            input_widget.pack(pady=3, padx=10)  
 
-            # Append the configuration value to the string
+            
             if prop_type == "boolean":
                 config_values_str += f"{prop}: {var.get()}\n"
             else:
-                config_values_str += f"{prop}: {var.get()}\n"  # Use var.get() for Entry widgets
+                config_values_str += f"{prop}: {var.get()}\n"  
 
-        # Buttons Section
+            
+            prop_data["widget"] = input_widget  
+            print(f"Widget for {prop} in show_config_frame: {input_widget}")
+
+        
         buttons_frame = ttk.Frame(config_window)
         buttons_frame.pack(pady=10)
 
         enable_disable_button = ttk.Button(buttons_frame, text="Enable" if not data["status"] else "Disable", command=lambda: self.toggle_config(category, config), style="Dark.TButton")
-        enable_disable_button.pack(side=tk.LEFT, padx=5)  # Adjusted padx
+        enable_disable_button.pack(side=tk.LEFT, padx=5)  
         save_button = ttk.Button(
             buttons_frame,
             text="Save",
             command=lambda cat=category, conf=config, dat=data, input_widget=input_widget: self.save_configuration(cat, conf, dat, input_widget)
         )
 
-        save_button.pack(side=tk.LEFT, padx=5)  # Adjusted padx
+        save_button.pack(side=tk.LEFT, padx=5)  
 
         back_button = ttk.Button(buttons_frame, text="Back", command=config_window.destroy, style="Dark.TButton")
-        back_button.pack(side=tk.LEFT, padx=5)  # Adjusted padx
+        back_button.pack(side=tk.LEFT, padx=5)  
 
-        # Display Section
+        
         ttk.Label(config_window, text="Configuration Values:", font=('Arial', 14), foreground='white', background='#2e2e2e').pack(pady=10)
         config_values_display = tk.Text(config_window, height=5, width=40, wrap=tk.WORD, background='#2e2e2e', foreground='white', insertbackground='white')
         config_values_display.insert(tk.END, config_values_str)
         config_values_display.pack(pady=5)
 
-        # Disable text widget editing
+        
         config_values_display.config(state=tk.DISABLED)
 
-        # Themed style for custom widgets
+        
         style = ThemedStyle(config_window)
         style.set_theme("equilux")
 
-        # Custom style for Checkbutton and Entry
+        
         style.configure("Dark.TCheckbutton", background='#2e2e2e', foreground='white')
         style.configure("Dark.TEntry", fieldbackground='#2e2e2e', foreground='white')
 
-        # Custom style for Buttons
+        
         style.configure("Dark.TButton", background='#2e2e2e', foreground='white', padding=5, font=('Arial', 10, 'bold'))
 
 
     def infer_type(self, value):
-        if value.lower() == "true" or value.lower() == "false":
+        if value.lower() in ["true", "false"]:
             return "boolean"
         elif value.isdigit():
             return "number"
         else:
             return "text"
+
 
             
     def save_settings(self):
@@ -303,42 +331,92 @@ class ConfigApp:
 
         messagebox.showinfo("Saved", "Settings saved to settings.txt")
 
+
+
+    def save_configuration(self, category, config_name, data, input_widgets):
         
-    def save_configuration(self, category, config, data, input_widgets):
-        # Get the current settings
         with open('settings.txt', 'r') as file:
             lines = file.readlines()
 
-        # Update the settings
-        value = None  # Default value if not assigned within the loop
+        
+        config_line = f"{config_name}:"
+        for prop_name, prop_data in data.get("properties", {}).items():
+            
+            widget_value = prop_data.get('widget')
+            
+            if widget_value is not None:
+                
+                try:
+                    if isinstance(widget_value, tk.Entry):
+                        prop_value = widget_value.get()
+                        print(f"Widget value for {prop_name}: {prop_value}")
+                    elif isinstance(widget_value, tk.BooleanVar):
+                        prop_value = str(widget_value.get()).lower()
+                    elif isinstance(widget_value, tk.Checkbutton):
+                        prop_value = widget_value.cget("variable").get()
+                        print(f"Widget value for {prop_name}: {prop_value}")
+                    else:
+                        
+                        prop_value = widget_value.get()
+                        print(f"Widget value for {prop_name}: {prop_value}")
+                except AttributeError:
+                    prop_value = None
+            else:
+                
+                prop_value = prop_data['value']
+                print(prop_data['value'])
+
+            
+            if prop_data['type'] == 'boolean':
+                prop_value = str(prop_value).lower()
+
+            config_line += f" {prop_name}={prop_value},"
+
+        
+        config_line = config_line.rstrip(",") + "\n"
+
+
         for i, line in enumerate(lines):
-            if line.startswith(f"{config}="):
-                # Extract the current type
-                current_type = self.extract_type(line)
-
-                # Determine the type of the configuration
-                if current_type == 'boolean':
-                    # For boolean, update the value based on the state of the checkbutton
-                    value = "True" if input_widgets.get() else "False"
-                elif current_type == 'number':
-                    # For text and number, get the value from the input widget
-                    value = input_widgets.get()
-
-                # Update the line with the new value
-                lines[i] = f"{config}={value}, type={current_type}\n"
+            if line.startswith(f"{config_name}:"):
+                lines[i] = config_line
                 break
 
-        # Save the updated settings back to the file
+
         with open('settings.txt', 'w') as file:
             file.writelines(lines)
 
-        print(f"Configuration '{config}' updated successfully with value '{value}'.")
+
+        for prop_name, prop_data in data.get("properties", {}).items():
+
+            widget_value = prop_data.get('widget')
+            if widget_value is not None:
+
+                if isinstance(widget_value, tk.BooleanVar):
+                    prop_value = str(widget_value.get()).lower()
+                else:
+     
+                    try:
+                        prop_value = widget_value.get()
+                    except AttributeError:
+                        prop_value = None
+            else:
+                prop_value = prop_data['value']
+
+  
+            if prop_data['type'] == 'boolean':
+                prop_value = str(prop_value).lower()
+
+            self.configurations[category][config_name]["properties"][prop_name]["value"] = prop_value
+
+
+
+        print(f"Configuration '{config_name}' updated successfully.")
+
 
 
 
 
     def extract_value_and(self, line):
-        # Extract value and type from a line in the settings file
         parts = line.strip().split('=')
         config_value = parts[1].split(',')[0].strip()
         return config_value
