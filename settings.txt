@@ -1,0 +1,4 @@
+
+[General]
+Server Name: Name=dsfdsf, Delay=123, Credits=true, KRS=false, image=placeholder_image.png
+
